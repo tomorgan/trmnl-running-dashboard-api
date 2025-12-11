@@ -157,8 +157,14 @@ This will:
 
 6. Test endpoint
    ```bash
-   curl http://localhost:7071/api/running-data
+   # Health check
+   curl "http://localhost:7071/api/health?code=<your-local-function-key>"
+   
+   # Running data
+   curl "http://localhost:7071/api/running-data?code=<your-local-function-key>"
    ```
+   
+   Note: Local development uses a default function key. Check the terminal output when running `func start` for the key, or it may work without the key parameter locally.
 
 ## Deployment to Azure
 
@@ -181,10 +187,21 @@ In Azure Portal → Function App → Configuration → Application settings, add
 
 Click **Save** after adding settings.
 
+**Get Function Key (Required for API access):**
+1. Azure Portal → Your Function App → Functions → running-data
+2. Click **Function Keys**
+3. Copy the `default` key value
+4. Use this key when calling the API: `?code=<your-function-key>`
+
 **Enable CORS (for TRMNL access):**
 - Azure Portal → Function App → CORS
 - Add: `https://usetrmnl.com` or `*`
 - Click **Save**
+
+**API URL Format:**
+```
+https://<your-function-app-name>.azurewebsites.net/api/running-data?code=<your-function-key>
+```
 
 ## API Response Format
 

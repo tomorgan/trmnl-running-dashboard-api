@@ -29,7 +29,7 @@ app = func.FunctionApp()
 logger = logging.getLogger(__name__)
 
 
-@app.route(route="running-data", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="running-data", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def get_running_data(req: func.HttpRequest) -> func.HttpResponse:
     """
     HTTP trigger function that returns running dashboard data.
@@ -192,7 +192,7 @@ def get_running_data(req: func.HttpRequest) -> func.HttpResponse:
         )
 
 
-@app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
 def health_check(req: func.HttpRequest) -> func.HttpResponse:
     """Simple health check endpoint."""
     return func.HttpResponse(
