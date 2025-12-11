@@ -310,7 +310,7 @@ trmnl-running-dashboard-api/
 
 ## Related Projects
 
-- TRMNL Running Dashboard Plugin - The e-ink display plugin for TRMNL devices
+- [A custom plugin for TRMNL e-ink displays that shows your weekly running progress, upcoming events, and recent runs.](https://github.com/tomorgan/trmnl-running-dashboard)
 
 ## License
 
