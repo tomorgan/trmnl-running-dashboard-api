@@ -1,0 +1,53 @@
+[
+  {
+    "id": 12345678901,
+    "name": "Morning Run",
+    "distance": 8367.2,
+    "moving_time": 2700,
+    "elapsed_time": 2800,
+    "total_elevation_gain": 50.5,
+    "type": "Run",
+    "start_date": "2025-12-02T06:30:00Z",
+    "start_date_local": "2025-12-02T06:30:00",
+    "timezone": "(GMT+00:00) Europe/London",
+    "average_speed": 3.099,
+    "max_speed": 4.2,
+    "has_heartrate": true,
+    "average_heartrate": 145.3,
+    "max_heartrate": 165
+  },
+  {
+    "id": 12345678902,
+    "name": "Lunch Run",
+    "distance": 9816.4,
+    "moving_time": 3120,
+    "elapsed_time": 3200,
+    "total_elevation_gain": 30.2,
+    "type": "Run",
+    "start_date": "2025-12-04T12:00:00Z",
+    "start_date_local": "2025-12-04T12:00:00",
+    "timezone": "(GMT+00:00) Europe/London",
+    "average_speed": 3.146,
+    "max_speed": 4.5,
+    "has_heartrate": true,
+    "average_heartrate": 142.1,
+    "max_heartrate": 160
+  },
+  {
+    "id": 12345678903,
+    "name": "Easy Recovery",
+    "distance": 6759.5,
+    "moving_time": 2160,
+    "elapsed_time": 2250,
+    "total_elevation_gain": 15.0,
+    "type": "Run",
+    "start_date": "2025-12-05T17:30:00Z",
+    "start_date_local": "2025-12-05T17:30:00",
+    "timezone": "(GMT+00:00) Europe/London",
+    "average_speed": 3.129,
+    "max_speed": 3.8,
+    "has_heartrate": true,
+    "average_heartrate": 135.5,
+    "max_heartrate": 150
+  }
+]
