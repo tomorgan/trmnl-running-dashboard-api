@@ -153,3 +153,60 @@ class StravaClient:
         
         logger.info(f"Filtered {len(runs)} runs from {len(activities)} activities")
         return runs
+    
+    def get_monthly_activities_detailed(self, days=30):
+        """
+        Get detailed activities from the past month for nutrition analysis.
+        
+        Args:
+            days (int): Number of days to look back (default 30)
+        
+        Returns:
+            list: List of activities with comprehensive fitness metrics
+        """
+        from datetime import datetime, timedelta
+        
+        # Calculate timestamp for X days ago
+        start_date = datetime.now() - timedelta(days=days)
+        after_timestamp = int(start_date.timestamp())
+        
+        # Get all activities after start date (max 200 per page)
+        activities = self.get_activities(after_timestamp=after_timestamp, per_page=200)
+        
+        # Extract comprehensive data for all activity types
+        detailed_activities = []
+        for activity in activities:
+            detailed_activity = {
+                'id': activity.get('id'),
+                'name': activity.get('name'),
+                'type': activity.get('type'),
+                'sport_type': activity.get('sport_type'),
+                'start_date': activity.get('start_date'),
+                'start_date_local': activity.get('start_date_local'),
+                'distance': activity.get('distance', 0),  # meters
+                'moving_time': activity.get('moving_time', 0),  # seconds
+                'elapsed_time': activity.get('elapsed_time', 0),  # seconds
+                'total_elevation_gain': activity.get('total_elevation_gain', 0),  # meters
+                'elev_high': activity.get('elev_high'),
+                'elev_low': activity.get('elev_low'),
+                'average_speed': activity.get('average_speed'),  # m/s
+                'max_speed': activity.get('max_speed'),  # m/s
+                'average_cadence': activity.get('average_cadence'),
+                'average_heartrate': activity.get('average_heartrate'),
+                'max_heartrate': activity.get('max_heartrate'),
+                'calories': activity.get('calories'),
+                'suffer_score': activity.get('suffer_score'),
+                'has_heartrate': activity.get('has_heartrate', False),
+                'average_temp': activity.get('average_temp'),
+                'workout_type': activity.get('workout_type'),
+                'description': activity.get('description'),
+                'trainer': activity.get('trainer', False),
+                'commute': activity.get('commute', False),
+                'achievement_count': activity.get('achievement_count', 0),
+                'kudos_count': activity.get('kudos_count', 0),
+                'pr_count': activity.get('pr_count', 0),
+            }
+            detailed_activities.append(detailed_activity)
+        
+        logger.info(f"Fetched {len(detailed_activities)} detailed activities from past {days} days")
+        return detailed_activities

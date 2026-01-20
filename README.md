@@ -5,6 +5,7 @@ Azure Function API that provides running data from Strava for the TRMNL Running 
 ## Features
 
 - 🏃 Fetches weekly running data from Strava API
+- 🥗 Comprehensive nutrition/fitness data endpoint with detailed activity history
 - 🌤️ Daily weather forecasts for training plan
 - 📊 Dynamic training schedule based on weeks until event
 - 💬 Daily rotating inspirational quotes
@@ -311,6 +312,24 @@ trmnl-running-dashboard-api/
 ## Related Projects
 
 - [A custom plugin for TRMNL e-ink displays that shows your weekly running progress, upcoming events, and recent runs.](https://github.com/tomorgan/trmnl-running-dashboard)
+
+## API Endpoints
+
+### `/api/running-data`
+Returns current week's running data formatted for TRMNL display. See main documentation above.
+
+### `/api/nutrition-data`
+Returns comprehensive activity history and fitness metrics for nutritional planning systems. This endpoint provides detailed data about activities from the past 30 days (configurable up to 90 days), including:
+- Complete activity history with distances, durations, and elevation
+- Heart rate metrics and suffer scores
+- Calorie expenditure data
+- Weekly and daily averages
+- Activity type breakdowns
+
+**See [NUTRITION-ENDPOINT.md](NUTRITION-ENDPOINT.md) for detailed documentation.**
+
+### `/api/health`
+Simple health check endpoint.
 
 ## License
 

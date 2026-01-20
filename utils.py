@@ -101,28 +101,32 @@ def get_weekly_target(weeks_until_event, training_schedule_json=None):
         return 25.0  # Fallback on error
 
 
-def calculate_pace(distance_meters, duration_seconds):
+def calculate_pace(distance_meters, duration_seconds, metric=False):
     """
-    Calculate running pace in min/mile format.
+    Calculate running pace in min/mile or min/km format.
     
     Args:
         distance_meters (float): Distance in meters
         duration_seconds (int): Duration in seconds
+        metric (bool): If True, return pace per km; if False, return pace per mile
     
     Returns:
-        str: Pace in "M:SS" format (e.g., "8:39")
+        str: Pace in "M:SS" format (e.g., "8:39" or "5:23")
     """
     if distance_meters == 0 or duration_seconds == 0:
         return "0:00"
     
-    # Convert meters to miles
-    distance_miles = distance_meters * 0.000621371
+    if metric:
+        # Calculate minutes per kilometer
+        distance_km = distance_meters / 1000
+        minutes_per_unit = duration_seconds / 60 / distance_km
+    else:
+        # Calculate minutes per mile
+        distance_miles = distance_meters * 0.000621371
+        minutes_per_unit = duration_seconds / 60 / distance_miles
     
-    # Calculate minutes per mile
-    minutes_per_mile = duration_seconds / 60 / distance_miles
-    
-    mins = int(minutes_per_mile)
-    secs = int((minutes_per_mile - mins) * 60)
+    mins = int(minutes_per_unit)
+    secs = int((minutes_per_unit - mins) * 60)
     
     return f"{mins}:{secs:02d}"
 

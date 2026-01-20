@@ -200,3 +200,197 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
         status_code=200,
         mimetype='application/json'
     )
+
+
+@app.route(route="nutrition-data", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+def get_nutrition_data(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    HTTP trigger function that returns comprehensive activity data for nutrition planning.
+    
+    Query Parameters:
+        days (optional): Number of days to look back (default: 30, max: 90)
+    
+    Returns:
+        JSON response with detailed activity history and fitness metrics
+    """
+    logger.info('Nutrition data request received')
+    
+    try:
+        # Get days parameter from query string
+        days_param = req.params.get('days', '30')
+        try:
+            days = min(int(days_param), 90)  # Cap at 90 days
+            days = max(days, 1)  # Minimum 1 day
+        except ValueError:
+            days = 30
+        
+        logger.info(f'Fetching data for past {days} days')
+        
+        # Fetch detailed activities from Strava
+        try:
+            strava = StravaClient()
+            activities = strava.get_monthly_activities_detailed(days=days)
+            logger.info(f'Fetched {len(activities)} activities from Strava')
+        except Exception as e:
+            logger.error(f'Strava API error: {e}')
+            return func.HttpResponse(
+                json.dumps({'error': 'Failed to fetch Strava data', 'details': str(e)}),
+                status_code=500,
+                mimetype='application/json'
+            )
+        
+        # Calculate summary statistics
+        total_activities = len(activities)
+        total_distance_meters = sum(a['distance'] for a in activities)
+        total_distance_km = round(total_distance_meters / 1000, 2)
+        total_distance_miles = round(meters_to_miles(total_distance_meters), 2)
+        total_moving_time_seconds = sum(a['moving_time'] for a in activities)
+        total_moving_time_hours = round(total_moving_time_seconds / 3600, 2)
+        total_elevation_meters = sum(a['total_elevation_gain'] for a in activities)
+        total_elevation_feet = round(total_elevation_meters * 3.28084, 0)
+        total_calories = sum(a['calories'] or 0 for a in activities)
+        
+        # Calculate activity type breakdown
+        activity_types = {}
+        for activity in activities:
+            activity_type = activity['type'] or 'Unknown'
+            if activity_type not in activity_types:
+                activity_types[activity_type] = {
+                    'count': 0,
+                    'total_distance_km': 0,
+                    'total_moving_time_hours': 0,
+                    'total_calories': 0,
+                    'total_elevation_meters': 0
+                }
+            activity_types[activity_type]['count'] += 1
+            activity_types[activity_type]['total_distance_km'] += activity['distance'] / 1000
+            activity_types[activity_type]['total_moving_time_hours'] += activity['moving_time'] / 3600
+            activity_types[activity_type]['total_calories'] += activity['calories'] or 0
+            activity_types[activity_type]['total_elevation_meters'] += activity['total_elevation_gain']
+        
+        # Round activity type statistics
+        for activity_type in activity_types:
+            activity_types[activity_type]['total_distance_km'] = round(activity_types[activity_type]['total_distance_km'], 2)
+            activity_types[activity_type]['total_distance_miles'] = round(activity_types[activity_type]['total_distance_km'] * 0.621371, 2)
+            activity_types[activity_type]['total_moving_time_hours'] = round(activity_types[activity_type]['total_moving_time_hours'], 2)
+            activity_types[activity_type]['total_elevation_feet'] = round(activity_types[activity_type]['total_elevation_meters'] * 3.28084, 0)
+        
+        # Calculate average metrics for activities with data
+        activities_with_hr = [a for a in activities if a['average_heartrate']]
+        avg_heartrate = round(sum(a['average_heartrate'] for a in activities_with_hr) / len(activities_with_hr), 1) if activities_with_hr else None
+        
+        activities_with_calories = [a for a in activities if a['calories']]
+        avg_calories_per_activity = round(sum(a['calories'] for a in activities_with_calories) / len(activities_with_calories), 0) if activities_with_calories else None
+        
+        activities_with_suffer = [a for a in activities if a['suffer_score']]
+        total_suffer_score = sum(a['suffer_score'] for a in activities_with_suffer)
+        avg_suffer_score = round(total_suffer_score / len(activities_with_suffer), 1) if activities_with_suffer else None
+        
+        # Calculate weekly averages
+        weeks_in_period = days / 7
+        weekly_activity_count = round(total_activities / weeks_in_period, 1)
+        weekly_distance_km = round(total_distance_km / weeks_in_period, 2)
+        weekly_distance_miles = round(total_distance_miles / weeks_in_period, 2)
+        weekly_moving_time_hours = round(total_moving_time_hours / weeks_in_period, 2)
+        weekly_calories = round(total_calories / weeks_in_period, 0) if total_calories > 0 else None
+        
+        # Calculate daily averages
+        daily_activity_count = round(total_activities / days, 2)
+        daily_distance_km = round(total_distance_km / days, 2)
+        daily_distance_miles = round(total_distance_miles / days, 2)
+        daily_calories = round(total_calories / days, 0) if total_calories > 0 else None
+        
+        # Prepare detailed activities list with formatted data
+        activities_formatted = []
+        for activity in activities:
+            formatted = {
+                'id': activity['id'],
+                'name': activity['name'],
+                'type': activity['type'],
+                'sport_type': activity['sport_type'],
+                'date': activity['start_date_local'][:10] if activity['start_date_local'] else activity['start_date'][:10],
+                'datetime': activity['start_date_local'] or activity['start_date'],
+                'distance_km': round(activity['distance'] / 1000, 2),
+                'distance_miles': round(meters_to_miles(activity['distance']), 2),
+                'duration_minutes': round(activity['moving_time'] / 60, 1),
+                'duration_hours': round(activity['moving_time'] / 3600, 2),
+                'elevation_gain_meters': round(activity['total_elevation_gain'], 0),
+                'elevation_gain_feet': round(activity['total_elevation_gain'] * 3.28084, 0),
+                'average_speed_kmh': round(activity['average_speed'] * 3.6, 2) if activity['average_speed'] else None,
+                'average_speed_mph': round(activity['average_speed'] * 2.23694, 2) if activity['average_speed'] else None,
+                'average_pace_min_per_km': calculate_pace(activity['distance'], activity['moving_time'], metric=True) if activity['distance'] > 0 else None,
+                'average_pace_min_per_mile': calculate_pace(activity['distance'], activity['moving_time']) if activity['distance'] > 0 else None,
+                'average_cadence': activity['average_cadence'],
+                'average_heartrate': activity['average_heartrate'],
+                'max_heartrate': activity['max_heartrate'],
+                'calories': activity['calories'],
+                'suffer_score': activity['suffer_score'],
+                'has_heartrate': activity['has_heartrate'],
+                'average_temp_celsius': activity['average_temp'],
+                'average_temp_fahrenheit': round((activity['average_temp'] * 9/5) + 32, 1) if activity['average_temp'] else None,
+                'workout_type': activity['workout_type'],
+                'trainer': activity['trainer'],
+                'commute': activity['commute'],
+                'achievements': activity['achievement_count'],
+                'kudos': activity['kudos_count'],
+                'personal_records': activity['pr_count'],
+            }
+            activities_formatted.append(formatted)
+        
+        # Build comprehensive response
+        response_data = {
+            'period': {
+                'days': days,
+                'start_date': (datetime.now() - __import__('datetime').timedelta(days=days)).strftime('%Y-%m-%d'),
+                'end_date': datetime.now().strftime('%Y-%m-%d'),
+            },
+            'summary': {
+                'total_activities': total_activities,
+                'total_distance_km': total_distance_km,
+                'total_distance_miles': total_distance_miles,
+                'total_moving_time_hours': total_moving_time_hours,
+                'total_elevation_meters': round(total_elevation_meters, 0),
+                'total_elevation_feet': total_elevation_feet,
+                'total_calories': total_calories if total_calories > 0 else None,
+                'total_suffer_score': total_suffer_score if activities_with_suffer else None,
+                'average_heartrate': avg_heartrate,
+                'average_calories_per_activity': avg_calories_per_activity,
+                'average_suffer_score': avg_suffer_score,
+            },
+            'weekly_averages': {
+                'activities_per_week': weekly_activity_count,
+                'distance_km_per_week': weekly_distance_km,
+                'distance_miles_per_week': weekly_distance_miles,
+                'moving_time_hours_per_week': weekly_moving_time_hours,
+                'calories_per_week': weekly_calories,
+            },
+            'daily_averages': {
+                'activities_per_day': daily_activity_count,
+                'distance_km_per_day': daily_distance_km,
+                'distance_miles_per_day': daily_distance_miles,
+                'calories_per_day': daily_calories,
+            },
+            'activity_types': activity_types,
+            'activities': activities_formatted,
+        }
+        
+        logger.info(f'Returning nutrition data: {total_activities} activities, {total_distance_km}km, {total_calories} calories')
+        
+        return func.HttpResponse(
+            json.dumps(response_data, indent=2),
+            status_code=200,
+            mimetype='application/json',
+            headers={
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f'Unexpected error: {e}', exc_info=True)
+        return func.HttpResponse(
+            json.dumps({'error': 'Internal server error', 'details': str(e)}),
+            status_code=500,
+            mimetype='application/json'
+        )
